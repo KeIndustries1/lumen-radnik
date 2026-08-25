@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --ink:#17131C; --ink2:#241E2B; --muted:#B7A9B4; --line:#3A2F3C; --bg:#1D1720; --card:#251E29;
+  --text:#F3E9EE; --rouge:#E27594; --rouge-d:#F0A9BC; --rouge-s:#3A2530; --ok:#5FAE85; --ok-s:#1E332A; --r:14px;
+  --sh:0 1px 2px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.3);
+}
+html,body{margin:0;padding:0;width:100%;overscroll-behavior:none}
+html{-webkit-text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+button,a{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text;font-size:16px}
+#root{max-width:none!important;margin:0!important;padding:0!important;text-align:left!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--text);
+  display:flex;justify-content:center;font-size:15px;line-height:1.45}
+.app-shell{width:100%;max-width:430px;margin:0 auto;background:var(--bg);color:var(--text);min-height:100dvh;position:relative;padding-bottom:78px}
+
+.topbar{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;border-bottom:1px solid #2B2430;
+  padding:calc(11px + env(safe-area-inset-top)) 16px 11px;display:flex;align-items:center;gap:10px}
+.topbar-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  font-family:Fraunces,serif;font-size:14px;font-weight:600;flex:none}
+.topbar b{font-family:Fraunces,serif;font-weight:600}
+.topbar small{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#B6A9B4;margin-top:1px}
+.topbar .signout{margin-left:auto;background:none;border:0;color:var(--rouge-d);font-weight:600;font-size:13px}
+
+main{padding:16px}
+.pagehead{margin-bottom:4px}
+.pagehead h2{font-family:Fraunces,serif;font-weight:600;font-size:24px;margin:0;color:var(--text)}
+.pagehead p{margin:4px 0 14px;color:var(--muted);font-size:13.5px}
+
+.dbar{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.dbar b{font-family:Fraunces,serif;font-size:19px;font-weight:600;color:var(--text)}
+.nav{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:16px}
+.nav.dark{background:var(--rouge);color:#fff;border-color:var(--rouge)}
+
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px}
+.wd{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:7px 0 6px;text-align:center}
+.wd small{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.wd b{font-size:15px;font-variant-numeric:tabular-nums}
+.wd.on{background:var(--rouge);border-color:var(--rouge);color:#fff}
+.wd.off{background:var(--bg);color:#5C525F}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px;box-shadow:var(--sh)}
+.name{font-weight:600;color:var(--text)}
+.tiny{font-size:12.5px;color:var(--muted)}
+.grow{flex:1;min-width:0}
+.price{font-weight:700;color:var(--text)}
+
+.tl{display:flex;gap:11px;align-items:center;width:100%;background:var(--card);border:1px solid var(--line);
+  border-left:4px solid var(--rouge);border-radius:12px;padding:10px 12px;margin-bottom:7px}
+.tl.blk{border-left-color:#6B6274;background:var(--ink2);box-shadow:none}
+.tl .t{width:48px;flex:none;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--text)}
+.tl .t small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}
+
+.ghost{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:9px 12px;font-weight:600}
+.btn{width:100%;padding:14px;border-radius:14px;border:0;background:var(--rouge);color:#fff;font-weight:700;margin-top:10px}
+.btn:disabled{opacity:.6}
+
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet .inner{width:100%;max-width:430px;background:var(--bg);border-radius:20px 20px 0 0;padding:18px;max-height:88vh;overflow-y:auto}
+.sheet h2{font-family:Fraunces,serif;font-weight:600;font-size:20px;margin:0 0 12px;color:var(--text)}
+.f{width:100%;padding:12px;border-radius:11px;border:1px solid var(--line);margin-bottom:8px;font:inherit;
+  background:var(--ink2);color:var(--text)}
+.pick{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px;
+  display:flex;gap:10px;align-items:center;margin-bottom:7px}
+.pick.sel{border-color:var(--rouge);background:var(--rouge-s)}
+.chk{width:20px;height:20px;border:1.5px solid var(--line);border-radius:6px;flex:none}
+.eyebrow{font-size:11px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;font-weight:700}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}
+.slot{border:1px solid var(--line);background:var(--ink2);color:var(--text);border-radius:10px;padding:10px 0;font-weight:700}
+.slot.on{background:var(--rouge);color:#fff;border-color:var(--rouge)}
+
+/* ============================================================ TABOVI (dole) */
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(29,23,32,.92);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);display:flex;padding:7px 4px calc(10px + env(safe-area-inset-bottom));z-index:30}
+.tabs button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px 0;color:var(--muted);font-size:10.5px;font-weight:600}
+.tabs button .i{font-size:19px}
+.tabs button.on{color:var(--rouge)}
+
+/* ============================================================ KLIJENTI lista */
+.clientrow{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:11px;margin-bottom:7px;width:100%;text-align:left}
+.clientrow .chev{color:var(--muted);font-size:18px;flex:none}
+.client-avatar{width:42px;height:42px;border-radius:50%;background:var(--ink2);color:var(--text);
+  display:grid;place-items:center;font-family:Fraunces,serif;font-weight:600;font-size:14px;flex:none}
+
+/* ============================================================ PROFIL */
+.profile-avatar{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  font-family:Fraunces,serif;font-size:26px;font-weight:600;margin:0 auto 12px}
+
+/* ============================================================ DNEVNI RASPORED — sati levo, kartice desno */
+.timeline{position:relative;display:flex;margin-top:6px}
+.tl-hours{position:relative;width:52px;flex:none}
+.tl-hour{position:absolute;left:0;right:0;transform:translateY(-7px);display:flex;flex-direction:column;align-items:flex-start}
+.tl-hour span{font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.tl-hourline{width:6px;height:1px;background:var(--line);margin-top:5px}
+
+.tl-events{position:relative;flex:1;border-left:1px solid var(--line);margin-left:4px}
+.tl-empty{position:absolute;top:14px;left:14px;right:14px;color:var(--muted);font-size:13px}
+
+.tl-card{position:absolute;left:10px;right:6px;background:var(--card);border:1px solid var(--line);
+  border-left:4px solid var(--rouge);border-radius:12px;padding:8px 10px;overflow:hidden;
+  display:flex;flex-direction:column;gap:1px;box-shadow:var(--sh);cursor:pointer}
+.tl-card:active{transform:scale(.98)}
+.tl-card.blk{cursor:default}
+.tl-card.blk:active{transform:none}
+.tl-card.blk{border-left-color:#6B6274;background:var(--ink2);opacity:.85}
+.tl-card-time{font-size:10.5px;font-weight:700;color:var(--rouge-d);letter-spacing:.02em}
+.tl-card.blk .tl-card-time{color:var(--muted)}
+.tl-card-name{font-weight:600;font-size:13.5px;color:var(--text)}
+.tl-card-sub{font-size:11.5px;color:var(--muted)}
+.tl-card-x{position:absolute;top:6px;right:6px;background:none;border:0;color:var(--muted);font-size:11px;font-weight:700}

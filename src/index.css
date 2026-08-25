@@ -1,0 +1,6 @@
+/* Vite standardno pravi ovaj fajl, ali main.jsx ga kod tebe ne ucitava,
+   tako da ti realno i ne treba. Ako ipak zelis da postoji (radi urednosti
+   projekta), ovo je bezbedan, prazan sadrzaj - ne remeti nas dizajn iz app.css. */
+:root {
+  color-scheme: dark;
+}
