@@ -196,3 +196,16 @@ main{padding:16px}
 .svc-edit-head{display:flex; align-items:center; gap:10px; cursor:pointer}
 .vip-badge{display:inline-block; background:var(--rouge); color:#fff; font-size:9.5px; font-weight:700;
   letter-spacing:.04em; padding:2px 6px; border-radius:5px; margin-right:6px; vertical-align:middle}
+
+/* ============================================================ IZREZIVANJE SLIKE (kao Instagram) */
+.cropper-backdrop{position:fixed;inset:0;z-index:200;background:rgba(10,8,12,.92);display:grid;place-items:center;padding:20px}
+.cropper-box{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.cropper-title{font-family:Fraunces,serif;font-size:20px;color:#fff}
+.cropper-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:-8px}
+.cropper-frame{position:relative;overflow:hidden;border-radius:12px;background:#000;touch-action:none;cursor:grab;user-select:none}
+.cropper-frame:active{cursor:grabbing}
+.cropper-mask{position:absolute;inset:0;pointer-events:none}
+.cropper-mask.circle{border-radius:50%;box-shadow:0 0 0 999px rgba(10,8,12,.6);border:2px solid rgba(255,255,255,.7)}
+.cropper-mask.square{border:2px solid rgba(255,255,255,.7);border-radius:12px}
+.cropper-zoom{width:100%;accent-color:var(--rouge)}
+.cropper-box .ghost, .cropper-box .btn{flex:1}

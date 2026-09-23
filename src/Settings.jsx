@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import ImageCropper from './ImageCropper'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import { User, Image as ImageIcon, Banknote, Crown, Megaphone, Clock, PlaneTakeoff } from 'lucide-react'
@@ -110,6 +111,7 @@ function ServicesSection({ worker, vip = false }) {
   const [newForm, setNewForm] = useState({ name_sr: '', duration_min: 30, price_rsd: '' })
   const [err, setErr] = useState(null)
   const [uploadingId, setUploadingId] = useState(null)
+  const [cropFor, setCropFor] = useState(null)   // { service, file }
 
   function load() {
     supabase.from('services').select('*').eq('worker_id', worker.id).eq('is_vip', vip).order('sort')
@@ -120,10 +122,9 @@ function ServicesSection({ worker, vip = false }) {
   async function uploadPhoto(service, file) {
     if (!file) return
     haptic('tap'); setUploadingId(service.id); setErr(null)
-    const ext = file.name.split('.').pop()
-    const path = `${worker.id}/${service.id}.${ext}`
+    const path = `${worker.id}/${service.id}.jpg`
     const { error: upErr } = await supabase.storage.from('service-photos')
-      .upload(path, file, { upsert: true, cacheControl: '3600' })
+      .upload(path, file, { upsert: true, cacheControl: '3600', contentType: 'image/jpeg' })
     if (upErr) { setErr(upErr.message); setUploadingId(null); haptic('warning'); return }
     const { data } = supabase.storage.from('service-photos').getPublicUrl(path)
     const url = `${data.publicUrl}?t=${Date.now()}`
@@ -172,6 +173,10 @@ function ServicesSection({ worker, vip = false }) {
 
   return (
     <div>
+      {cropFor && (
+        <ImageCropper file={cropFor.file} shape="square" onCancel={() => setCropFor(null)}
+          onDone={blob => { const svc = cropFor.service; setCropFor(null); uploadPhoto(svc, blob) }} />
+      )}
       {vip && rows.length === 0 && !adding && (
         <p className="tiny" style={{ marginBottom: 14 }}>Ovde dodaješ posebne VIP termine sa sopstvenom cenom — nezavisno od redovnog cenovnika.</p>
       )}
@@ -188,7 +193,7 @@ function ServicesSection({ worker, vip = false }) {
                 <label className="ghost" style={{ width: 'auto', padding: '7px 11px', fontSize: 12.5, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
                   {uploadingId === s.id ? 'Otpremam…' : s.image_url ? 'Zameni sliku' : 'Dodaj sliku'}
                   <input type="file" accept="image/*" disabled={uploadingId === s.id}
-                    onChange={e => uploadPhoto(s, e.target.files?.[0])}
+                    onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setCropFor({ service: s, file: f }) }}
                     style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
                 </label>
               </div>
@@ -320,16 +325,20 @@ function TimeOffSection({ worker }) {
 function PhotoSection({ worker, onWorkerChange }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
+  const [pending, setPending] = useState(null)   // izabrana slika koja ceka izrezivanje
   const c = catFor(worker.role_sr)
 
-  async function onPick(e) {
+  function onPick(e) {
     const file = e.target.files?.[0]
-    if (!file) return
-    setBusy(true); setErr(null)
-    const ext = file.name.split('.').pop()
-    const path = `${worker.id}/avatar.${ext}`
+    e.target.value = ''
+    if (file) { setErr(null); setPending(file) }
+  }
+
+  async function upload(blob) {
+    setPending(null); setBusy(true); setErr(null)
+    const path = `${worker.id}/avatar.jpg`
     const { error: upErr } = await supabase.storage.from('worker-photos')
-      .upload(path, file, { upsert: true, cacheControl: '3600' })
+      .upload(path, blob, { upsert: true, cacheControl: '3600', contentType: 'image/jpeg' })
     if (upErr) { setErr(upErr.message); setBusy(false); haptic('warning'); return }
     const { data } = supabase.storage.from('worker-photos').getPublicUrl(path)
     const url = `${data.publicUrl}?t=${Date.now()}`   // cache-bust da se odmah vidi nova slika
@@ -356,6 +365,7 @@ function PhotoSection({ worker, onWorkerChange }) {
           style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
       </label>
       {err && <p className="err" style={{ marginTop: 8 }}>{err}</p>}
+      {pending && <ImageCropper file={pending} shape="circle" onCancel={() => setPending(null)} onDone={upload} />}
     </div>
   )
 }
