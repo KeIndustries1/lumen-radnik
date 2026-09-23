@@ -1,5 +1,6 @@
 import { supabase } from './lib/supabase'
 import { catFor, initials } from './images'
+import { haptic } from './lib/haptic'
 
 export default function Profile({ worker, salon }) {
   const c = catFor(worker.role_sr)
@@ -14,7 +15,7 @@ export default function Profile({ worker, salon }) {
         <div className="tiny" style={{ marginTop: 2 }}>{worker.role_sr}</div>
         <div className="tiny" style={{ marginTop: 10 }}>{salon.name}</div>
         <button className="ghost" style={{ width: '100%', marginTop: 18 }}
-          onClick={() => supabase.auth.signOut()}>
+          onClick={() => { haptic('tap'); supabase.auth.signOut() }}>
           Odjavi se
         </button>
       </div>

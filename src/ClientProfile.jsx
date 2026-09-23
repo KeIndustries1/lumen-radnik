@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from './lib/supabase'
 import { initials } from './images'
+import { SkeletonRows } from './Skeleton'
+import { haptic } from './lib/haptic'
 
 const fmtDate = ds => { const d = new Date(ds+'T00:00:00'); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear()+'.' }
 
@@ -15,7 +18,7 @@ export default function ClientProfile({ client, salon, onClose }) {
       .then(({ data }) => setHistory(data || []))
   }, [client.id])
 
-  return (
+  return createPortal((
     <div className="sheet" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="inner">
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
@@ -23,17 +26,20 @@ export default function ClientProfile({ client, salon, onClose }) {
             {initials(client.name)}
           </div>
           <div style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: 'var(--text)' }}>{client.name}</div>
+          {client.email && (
+            <div className="tiny" style={{ marginTop: 4 }}>{client.email}</div>
+          )}
           {client.phone && (
             <a href={`tel:${client.phone.replace(/ /g,'')}`} className="ghost"
               style={{ display: 'inline-block', marginTop: 10 }}>
-              📞 {client.phone}
+              ☎ {client.phone}
             </a>
           )}
         </div>
 
         <div className="eyebrow">Istorija termina</div>
         {history === null ? (
-          <p className="tiny">Učitavanje…</p>
+          <SkeletonRows count={2} />
         ) : history.length === 0 ? (
           <p className="tiny">Još nema termina kod nas.</p>
         ) : history.map(a => (
@@ -48,8 +54,8 @@ export default function ClientProfile({ client, salon, onClose }) {
           </div>
         ))}
 
-        <button className="ghost" style={{ width: '100%', marginTop: 8 }} onClick={onClose}>Zatvori</button>
+        <button className="ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => { haptic('tap'); onClose() }}>Zatvori</button>
       </div>
     </div>
-  )
+  ), document.body)
 }
