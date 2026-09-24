@@ -6,16 +6,16 @@
   --text:#F3E9EE; --rouge:#E27594; --rouge-d:color-mix(in srgb, var(--rouge) 60%, white); --rouge-s:color-mix(in srgb, var(--rouge) 22%, var(--ink2)); --ok:#5FAE85; --ok-s:#1E332A; --r:14px;
   --sh:0 1px 2px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.3);
 }
-html,body{margin:0;padding:0;width:100%;overscroll-behavior:none}
+html,body{margin:0;padding:0;width:100%;height:100%;overscroll-behavior:none}
 html{-webkit-text-size-adjust:100%}
 *{-webkit-tap-highlight-color:transparent}
 button,a{touch-action:manipulation;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text;font-size:16px}
-#root{max-width:none!important;margin:0!important;padding:0!important;text-align:left!important}
+#root{width:100%;max-width:none!important;margin:0!important;padding:0!important;text-align:left!important}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--text);
   display:flex;justify-content:center;font-size:15px;line-height:1.45}
-.app-shell{width:100%;max-width:430px;margin:0 auto;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;position:relative;padding-bottom:78px}
+.app-shell{width:100%;max-width:none;margin:0 auto;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;position:relative;padding-bottom:78px}
 
 .topbar{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;border-bottom:1px solid #2B2430;
   padding:calc(11px + env(safe-area-inset-top)) 16px 11px;display:flex;align-items:center;gap:10px}
@@ -63,7 +63,7 @@ main{padding:16px}
 .btn:disabled{opacity:.6}
 
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
-.sheet .inner{width:100%;max-width:430px;background:var(--bg);border-radius:20px 20px 0 0;
+.sheet .inner{width:100%;max-width:none;background:var(--bg);border-radius:20px 20px 0 0;
   padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:88vh;max-height:88dvh;overflow-y:auto}
 .sheet h2{font-family:Fraunces,serif;font-weight:600;font-size:20px;margin:0 0 12px;color:var(--text)}
 .f{width:100%;padding:12px;border-radius:11px;border:1px solid var(--line);margin-bottom:8px;font:inherit;
@@ -80,7 +80,7 @@ main{padding:16px}
 .slot.on{background:var(--rouge);color:#fff;border-color:var(--rouge)}
 
 /* ============================================================ TABOVI (dole) */
-.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(29,23,32,.92);backdrop-filter:blur(14px);
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:none;background:rgba(29,23,32,.92);backdrop-filter:blur(14px);
   border-top:1px solid var(--line);display:flex;padding:7px 4px calc(10px + env(safe-area-inset-bottom));z-index:30}
 .tabs button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;
   padding:6px 0;color:var(--muted);font-size:10.5px;font-weight:600;transition:transform .12s}
@@ -142,7 +142,7 @@ main{padding:16px}
 @keyframes cardIn{ from{opacity:0; transform:translateY(6px) scale(.97)} to{opacity:1; transform:translateY(0) scale(1)} }
 
 /* ============================================================ LOGIN EKRAN (uskladjen sa klijent app-om) */
-.auth-screen{max-width:430px; margin:0 auto; min-height:100vh;min-height:100dvh; display:flex; align-items:center;
+.auth-screen{width:100%;max-width:none; margin:0 auto; min-height:100vh;min-height:100dvh; display:flex; align-items:center;
   background:var(--ink); color:var(--text); padding:0 26px}
 .auth-card{width:100%}
 .auth-card .mark{font-size:12px; letter-spacing:.3em; text-transform:uppercase; color:var(--muted)}
@@ -166,7 +166,7 @@ main{padding:16px}
   align-items:center; justify-content:center; margin-right:11px; color:var(--muted); flex:none}
 .settings-modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(3px);
   z-index:40; display:flex; align-items:flex-end; justify-content:center}
-.settings-modal{width:100%; max-width:430px; background:var(--card); border-radius:22px 22px 0 0;
+.settings-modal{width:100%; max-width:none; background:var(--card); border-radius:22px 22px 0 0;
   padding:8px 20px calc(24px + env(safe-area-inset-bottom)); max-height:80vh;max-height:80dvh; overflow-y:auto}
 .sheet-handle{width:36px; height:4px; border-radius:99px; background:var(--line); margin:6px auto 14px}
 .sheet-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
@@ -209,3 +209,13 @@ main{padding:16px}
 .cropper-mask.square{border:2px solid rgba(255,255,255,.7);border-radius:12px}
 .cropper-zoom{width:100%;accent-color:var(--rouge)}
 .cropper-box .ghost, .cropper-box .btn{flex:1}
+
+/* ============================================================ PARITET SA KLIJENTOM */
+/* Tab natpisi nikad ne prelaze u drugi red */
+.tabs button{white-space:nowrap;min-width:0}
+.tabs button span:not(.i){overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* Zupcanik za ucitavanje */
+.gear-loader{display:flex;justify-content:center;align-items:center;padding:56px 0;color:var(--rouge)}
+.gear-loader svg{animation:gearspin 1.1s linear infinite}
+@keyframes gearspin{to{transform:rotate(360deg)}}

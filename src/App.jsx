@@ -6,15 +6,17 @@ import Clients from './Clients'
 import Settings from './Settings'
 import { catFor, initials } from './images'
 import { motion, AnimatePresence } from 'framer-motion'
+import { GearLoader } from './Skeleton'
 import { haptic } from './lib/haptic'
 import { applyTheme } from './lib/themes'
+import { initPush } from './lib/push'
 import './app.css'
 
 function FullLoading() {
   return (
-    <div style={{ maxWidth: 430, margin: '0 auto', minHeight: '100dvh', display: 'flex',
+    <div style={{ width: '100%', minHeight: '100vh', display: 'flex',
       alignItems: 'center', justifyContent: 'center', background: 'var(--ink)' }}>
-      <div className="skel" style={{ width: 46, height: 46, borderRadius: '50%' }} />
+      <GearLoader />
     </div>
   )
 }
@@ -32,6 +34,9 @@ export default function App() {
   }, [])
 
   useEffect(() => { reloadWorker() }, [session])
+
+  // Push: traži dozvolu i čuva token tek kad znamo koji je radnik ulogovan
+  useEffect(() => { if (worker) initPush('workin') }, [worker?.id])
 
   // Univerzalna app: salon se NE bira unapred (nema env promenljivu).
   // Prvo saznamo KOJI je radnik ulogovan, pa preko njegovog salon_id
@@ -55,7 +60,7 @@ export default function App() {
   if (!session) return <AuthScreen />
   if (worker === undefined || salon === undefined) return <FullLoading />
   if (!worker) return (
-    <div style={{ maxWidth: 430, margin: '0 auto', minHeight: '100dvh', display: 'flex',
+    <div style={{ width: '100%', minHeight: '100vh', display: 'flex',
       flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14,
       background: 'var(--ink)', color: 'var(--text)', padding: 24, textAlign: 'center' }}>
       <p>Ovaj nalog nije povezan sa nijednim salonom. Obratite se salonu da provere vaš pristup.</p>
@@ -85,25 +90,21 @@ export default function App() {
       </div>
 
       <main>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={tab}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {tab === 'raspored' && <Schedule worker={worker} salon={salon} />}
-            {tab === 'klijenti' && <Clients salon={salon} />}
-            {tab === 'profil' && <Settings worker={worker} salon={salon} onWorkerChange={reloadWorker} />}
-          </motion.div>
-        </AnimatePresence>
+        <div style={{ display: tab === 'raspored' ? 'block' : 'none' }}>
+          <Schedule worker={worker} salon={salon} />
+        </div>
+        <div style={{ display: tab === 'klijenti' ? 'block' : 'none' }}>
+          <Clients salon={salon} />
+        </div>
+        <div style={{ display: tab === 'profil' ? 'block' : 'none' }}>
+          <Settings worker={worker} salon={salon} onWorkerChange={reloadWorker} />
+        </div>
       </main>
 
       <div className="tabs">
-        <button className={tab==='raspored'?'on':''} onClick={()=>switchTab('raspored')}><span className="i">◷</span>Raspored</button>
-        <button className={tab==='klijenti'?'on':''} onClick={()=>switchTab('klijenti')}><span className="i">☺</span>Klijenti</button>
-        <button className={tab==='profil'?'on':''} onClick={()=>switchTab('profil')}><span className="i">⚙</span>Podešavanja</button>
+        <button className={tab==='raspored'?'on':''} onClick={()=>switchTab('raspored')}><span className="i">◷</span><span>Raspored</span></button>
+        <button className={tab==='klijenti'?'on':''} onClick={()=>switchTab('klijenti')}><span className="i">☺</span><span>Klijenti</span></button>
+        <button className={tab==='profil'?'on':''} onClick={()=>switchTab('profil')}><span className="i">⚙</span><span>Podešavanja</span></button>
       </div>
     </div>
   )
