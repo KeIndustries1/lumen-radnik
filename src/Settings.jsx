@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import ImageCropper from './ImageCropper'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { User, Image as ImageIcon, Banknote, Crown, Megaphone, Clock, PlaneTakeoff } from 'lucide-react'
+import { User, Image as ImageIcon, Banknote, Crown, Megaphone, Clock, PlaneTakeoff, Bell } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { catFor, initials } from './images'
 import { haptic } from './lib/haptic'
@@ -14,9 +14,9 @@ const fmtHM = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60)
 const TIME_OPTIONS = Array.from({ length: (23-6)*2 + 1 }, (_, i) => 6*60 + i*30)   // 06:00–23:00 na 30min
 
 export default function Settings({ worker, salon, onWorkerChange }) {
-  const [modal, setModal] = useState(null)   // 'profile' | 'hours' | 'photo' | 'timeoff' | 'services' | 'vip' | 'notify' | null
+  const [modal, setModal] = useState(null)   // 'profile' | 'hours' | 'photo' | 'timeoff' | 'services' | 'vip' | 'notify' | 'remind' | null
 
-  const titles = { profile: 'Moj profil', hours: 'Radno vreme', photo: 'Slika profila', timeoff: 'Odmor', services: 'Cene i usluge', vip: 'VIP termini', notify: 'Obaveštenje' }
+  const titles = { profile: 'Moj profil', hours: 'Radno vreme', photo: 'Slika profila', timeoff: 'Odmor', services: 'Cene i usluge', vip: 'VIP termini', notify: 'Obaveštenje', remind: 'Podsetnici klijentima' }
 
   function open(key) { haptic('tap'); setModal(key) }
   function close() { setModal(null) }
@@ -30,6 +30,7 @@ export default function Settings({ worker, salon, onWorkerChange }) {
         <button className="settings-row" onClick={() => open('services')}><span className="s-ic"><Banknote size={13} strokeWidth={1.75} /></span>Cene i usluge<span className="chev">›</span></button>
         <button className="settings-row" onClick={() => open('vip')}><span className="s-ic"><Crown size={13} strokeWidth={1.75} /></span>VIP termini<span className="chev">›</span></button>
         <button className="settings-row" onClick={() => open('notify')}><span className="s-ic"><Megaphone size={13} strokeWidth={1.75} /></span>Obaveštenje<span className="chev">›</span></button>
+        <button className="settings-row" onClick={() => open('remind')}><span className="s-ic"><Bell size={13} strokeWidth={1.75} /></span>Podsetnici klijentima<span className="chev">›</span></button>
         <button className="settings-row" onClick={() => open('hours')}><span className="s-ic"><Clock size={13} strokeWidth={1.75} /></span>Radno vreme<span className="chev">›</span></button>
         <button className="settings-row" onClick={() => open('timeoff')}><span className="s-ic"><PlaneTakeoff size={13} strokeWidth={1.75} /></span>Odmor<span className="chev">›</span></button>
       </div>
@@ -55,6 +56,7 @@ export default function Settings({ worker, salon, onWorkerChange }) {
               {modal === 'services' && <ServicesSection worker={worker} />}
               {modal === 'vip' && <ServicesSection worker={worker} vip />}
               {modal === 'notify' && <NotifySection worker={worker} salon={salon} />}
+              {modal === 'remind' && <RemindSection worker={worker} onWorkerChange={onWorkerChange} />}
             </div>
           </motion.div>
         </motion.div>
@@ -66,6 +68,62 @@ export default function Settings({ worker, salon, onWorkerChange }) {
 const DUR_OPTIONS = [15, 20, 30, 40, 45, 60, 75, 90, 105, 120, 150, 180]
 const din = v => Number(v).toLocaleString('sr-RS') + ' din'
 const durTxt = m => m>=60 ? (m%60 ? Math.floor(m/60)+'h '+(m%60)+'min' : Math.floor(m/60)+'h') : m+'min'
+
+const DAY_HOURS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+const HOURS_BEFORE = [1, 2, 3, 4, 5, 6]
+const satiTxt = n => n === 1 ? '1 sat' : n <= 4 ? `${n} sata` : `${n} sati`
+
+function RemindSection({ worker, onWorkerChange }) {
+  const [dayHour, setDayHour] = useState(worker.remind_day_hour ?? 19)
+  const [hrs, setHrs] = useState(worker.remind_hours_before ?? 3)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState(null)
+
+  async function save() {
+    setErr(null); setSaving(true)
+    const { error } = await supabase.from('workers')
+      .update({ remind_day_hour: Number(dayHour), remind_hours_before: Number(hrs) })
+      .eq('id', worker.id)
+    setSaving(false)
+    if (error) { setErr(error.message); haptic('warning'); return }
+    haptic('success'); setSaved(true); onWorkerChange?.()
+    setTimeout(() => setSaved(false), 1800)
+  }
+
+  return (
+    <div>
+      <p className="tiny" style={{ marginBottom: 14 }}>
+        Tvoji klijenti dobijaju notifikaciju na telefon pre zakazanog termina. Ovde biraš kada.
+      </p>
+
+      <div className="hourrow">
+        <div className="hourrow-head">
+          <b>Dan pre termina</b>
+          <select value={dayHour} onChange={e => setDayHour(e.target.value)}>
+            <option value={0}>Isključeno</option>
+            {DAY_HOURS.map(h => <option key={h} value={h}>u {String(h).padStart(2, '0')}:00</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="hourrow">
+        <div className="hourrow-head">
+          <b>Na dan termina</b>
+          <select value={hrs} onChange={e => setHrs(e.target.value)}>
+            <option value={0}>Isključeno</option>
+            {HOURS_BEFORE.map(h => <option key={h} value={h}>{satiTxt(h)} pre</option>)}
+          </select>
+        </div>
+      </div>
+
+      {err && <p className="err">{err}</p>}
+      <button className="btn" disabled={saving} onClick={save} style={{ marginTop: 14 }}>
+        {saving ? 'Čuvam…' : saved ? '✓ Sačuvano' : 'Sačuvaj'}
+      </button>
+    </div>
+  )
+}
 
 function NotifySection({ worker, salon }) {
   const [title, setTitle] = useState('')
