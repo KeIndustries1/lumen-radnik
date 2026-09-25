@@ -66,6 +66,12 @@ export default function Settings({ worker, salon, onWorkerChange }) {
 }
 
 const DUR_OPTIONS = [15, 20, 30, 40, 45, 60, 75, 90, 105, 120, 150, 180]
+
+// iz javnog URL-a izvuče putanju fajla u storage-u (da bi mogao da se obriše)
+const storagePath = (url, bucket) => {
+  const m = (url || '').split('?')[0].split(`/${bucket}/`)
+  return m.length > 1 ? decodeURIComponent(m[1]) : null
+}
 const din = v => Number(v).toLocaleString('sr-RS') + ' din'
 const durTxt = m => m>=60 ? (m%60 ? Math.floor(m/60)+'h '+(m%60)+'min' : Math.floor(m/60)+'h') : m+'min'
 
@@ -192,6 +198,17 @@ function ServicesSection({ worker, vip = false }) {
     haptic('success'); load()
   }
 
+  async function removePhoto(service) {
+    if (!window.confirm('Ukloniti sliku ove usluge?')) return
+    haptic('tap'); setUploadingId(service.id); setErr(null)
+    const path = storagePath(service.image_url, 'service-photos')
+    if (path) await supabase.storage.from('service-photos').remove([path])
+    const { error } = await supabase.from('services').update({ image_url: null }).eq('id', service.id)
+    setUploadingId(null)
+    if (error) { setErr(error.message); haptic('warning'); return }
+    haptic('success'); load()
+  }
+
   function startEdit(s) {
     haptic('tap')
     setEditing(s.id)
@@ -254,6 +271,11 @@ function ServicesSection({ worker, vip = false }) {
                     onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setCropFor({ service: s, file: f }) }}
                     style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
                 </label>
+                {s.image_url && (
+                  <button className="ghost" disabled={uploadingId === s.id}
+                    style={{ width: 'auto', padding: '7px 11px', fontSize: 12.5 }}
+                    onClick={() => removePhoto(s)}>Ukloni</button>
+                )}
               </div>
               <input className="f" value={form.name_sr} onChange={e => setForm(f => ({ ...f, name_sr: e.target.value }))} placeholder="Naziv usluge" />
               <div className="hourrow-times" style={{ marginBottom: 8 }}>
@@ -407,6 +429,18 @@ function PhotoSection({ worker, onWorkerChange }) {
     onWorkerChange?.()
   }
 
+  async function removePhoto() {
+    if (!window.confirm('Ukloniti profilnu sliku?')) return
+    haptic('tap'); setBusy(true); setErr(null)
+    const path = storagePath(worker.photo_url, 'worker-photos')
+    if (path) await supabase.storage.from('worker-photos').remove([path])
+    const { error } = await supabase.from('workers').update({ photo_url: null }).eq('id', worker.id)
+    setBusy(false)
+    if (error) { setErr(error.message); haptic('warning'); return }
+    haptic('success')
+    onWorkerChange?.()
+  }
+
   return (
     <div style={{ textAlign: 'center' }}>
       {worker.photo_url ? (
@@ -422,6 +456,11 @@ function PhotoSection({ worker, onWorkerChange }) {
         <input type="file" accept="image/*" onChange={onPick} disabled={busy}
           style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
       </label>
+      {worker.photo_url && (
+        <button className="ghost" disabled={busy} style={{ width: '100%', marginTop: 8 }} onClick={removePhoto}>
+          Ukloni sliku
+        </button>
+      )}
       {err && <p className="err" style={{ marginTop: 8 }}>{err}</p>}
       {pending && <ImageCropper file={pending} shape="circle" onCancel={() => setPending(null)} onDone={upload} />}
     </div>
