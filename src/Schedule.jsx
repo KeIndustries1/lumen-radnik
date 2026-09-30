@@ -5,7 +5,7 @@ import ClientProfile from './ClientProfile'
 import { SkeletonRows } from './Skeleton'
 import { haptic } from './lib/haptic'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Phone, X, CalendarDays, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Phone, X, CalendarDays, CalendarClock, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const fmt = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0')
 const dur = m => m>=60 ? (m%60 ? Math.floor(m/60)+'h '+(m%60)+'min' : Math.floor(m/60)+'h') : m+'min'
@@ -27,6 +27,7 @@ export default function Schedule({ worker, salon }) {
   const [showBook, setShowBook] = useState(false)
   const [bookAtTime, setBookAtTime] = useState(null)
   const [openClient, setOpenClient] = useState(null)
+  const [moving, setMoving] = useState(null)   // termin koji se pomera
   const dateInputRef = useRef(null)
 
   // radno vreme salona, zaokruženo na cele sate
@@ -54,7 +55,7 @@ export default function Schedule({ worker, salon }) {
   async function unblock(id) { haptic('tap'); await supabase.from('appointments').delete().eq('id', id); load() }
   async function cancel(a) {
     if (!window.confirm(`Otkazati termin u ${fmt(a.start_min)}${a.clients?.name ? ' — ' + a.clients.name : ''}?`)) return
-    haptic('warning'); await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', a.id); load()
+    haptic('warning'); await supabase.from('appointments').update({ status: 'cancelled', cancelled_by: 'worker' }).eq('id', a.id); load()
   }
 
   function pick(d) { if (d !== date) { haptic('tap'); setDate(d) } }
@@ -91,9 +92,14 @@ export default function Schedule({ worker, salon }) {
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
             <DayTimeline rows={rows} date={date} start={dayStart} end={dayEnd}
               onSwipe={n => pick(addDays(date, n))}
-              onUnblock={unblock} onCancel={cancel} onOpenClient={setOpenClient} onQuickAdd={openBookAt} />
+              onUnblock={unblock} onCancel={cancel} onMove={setMoving} onOpenClient={setOpenClient} onQuickAdd={openBookAt} />
           </motion.div>
         </AnimatePresence>
+      )}
+      {moving && (
+        <MoveAppointment worker={worker} appt={moving}
+          onDone={() => { setMoving(null); load() }}
+          onClose={() => setMoving(null)} />
       )}
       {openClient && <ClientProfile client={openClient} salon={salon} onClose={() => setOpenClient(null)} />}
 
@@ -150,7 +156,7 @@ function WeekStrip({ date, busyDays, onPick }) {
 }
 
 // ================= Vremenska osa + kartice =================
-function DayTimeline({ rows, date, start, end, onSwipe, onUnblock, onCancel, onOpenClient, onQuickAdd }) {
+function DayTimeline({ rows, date, start, end, onSwipe, onUnblock, onCancel, onMove, onOpenClient, onQuickAdd }) {
   const height = (end - start) * PX
   const ticks = []
   for (let m = start; m <= end; m += 15) ticks.push(m)
@@ -233,6 +239,9 @@ function DayTimeline({ rows, date, start, end, onSwipe, onUnblock, onCancel, onO
                     <Phone size={12} strokeWidth={1.75} />
                   </a>
                 )}
+                <button className="sch-btn" onClick={e => { e.stopPropagation(); onMove(a) }} aria-label="Pomeri">
+                  <CalendarClock size={12} strokeWidth={1.75} />
+                </button>
                 <button className="sch-btn" onClick={e => { e.stopPropagation(); onCancel(a) }} aria-label="Otkaži">
                   <X size={12} strokeWidth={2} />
                 </button>
@@ -259,6 +268,57 @@ async function blockQuick(workerId, date, dayStart, reload) {
   })
   if (error) { haptic('warning'); alert(error.code === '23P01' ? 'Tih 30 minuta je već zauzeto.' : error.message); return }
   reload()
+}
+
+
+// ================= Pomeranje termina =================
+function MoveAppointment({ worker, appt, onDone, onClose }) {
+  const [date, setDate] = useState(appt.appt_date)
+  const [slots, setSlots] = useState(null)
+  const [time, setTime] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState(null)
+
+  useEffect(() => {
+    setSlots(null); setTime(null)
+    supabase.rpc('available_slots', { p_worker: worker.id, p_date: date, p_duration: appt.duration_min, p_exclude: appt.id })
+      .then(({ data }) => setSlots((data || []).map(r => r.start_min)))
+  }, [date])
+
+  async function confirm() {
+    setErr(null); setSaving(true)
+    const { error } = await supabase.from('appointments').update({
+      appt_date: date, start_min: time, reminded_day: false, reminded_hours: false,
+    }).eq('id', appt.id)
+    setSaving(false)
+    if (error) {
+      setErr(error.code === '23P01' ? 'Taj termin je zauzet — izaberite drugo vreme.' : error.message)
+      haptic('warning'); return
+    }
+    haptic('success'); onDone()
+  }
+
+  return createPortal((
+    <div className="sheet" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="inner">
+        <h2>Pomeri termin</h2>
+        <p className="tiny" style={{ marginBottom: 12 }}>
+          {appt.clients?.name || 'Klijent'} · sada {appt.appt_date.split('-').reverse().slice(0, 2).join('.')}. u {fmt(appt.start_min)} · {dur(appt.duration_min)}
+        </p>
+        <input className="f" type="date" min={todayISO} value={date} onChange={e => e.target.value && setDate(e.target.value)} />
+        {slots === null ? <p className="tiny">Učitavam…</p> : slots.length === 0 ? (
+          <p className="tiny">Nema slobodnih termina tog dana. Izaberite drugi datum.</p>
+        ) : (
+          <div className="slots">
+            {slots.map(t => <button key={t} className={'slot' + (time === t ? ' on' : '')} onClick={() => setTime(t)}>{fmt(t)}</button>)}
+          </div>
+        )}
+        {err && <p style={{ color: '#A8324F' }}>{err}</p>}
+        {time !== null && <button className="btn" disabled={saving} onClick={confirm}>{saving ? 'Čuvam…' : 'Pomeri na ' + fmt(time)}</button>}
+        <button className="ghost" style={{ width: '100%', marginTop: 8 }} onClick={onClose}>Odustani</button>
+      </div>
+    </div>
+  ), document.body)
 }
 
 function BookForClient({ worker, salon, date, initialTime, onDone, onClose }) {
