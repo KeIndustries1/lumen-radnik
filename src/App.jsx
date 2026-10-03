@@ -4,6 +4,7 @@ import AuthScreen from './AuthScreen'
 import Schedule from './Schedule'
 import Clients from './Clients'
 import Settings from './Settings'
+import OrdersBoard from './shop/OrdersBoard'
 import { catFor, initials } from './images'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GearLoader } from './Skeleton'
@@ -91,7 +92,7 @@ export default function App() {
 
       <main>
         <div style={{ display: tab === 'raspored' ? 'block' : 'none' }}>
-          <Schedule worker={worker} salon={salon} />
+          {salon.kind === 'catalog' ? <OrdersBoard salon={salon} /> : <Schedule worker={worker} salon={salon} />}
         </div>
         <div style={{ display: tab === 'klijenti' ? 'block' : 'none' }}>
           <Clients salon={salon} />
@@ -102,7 +103,7 @@ export default function App() {
       </main>
 
       <div className="tabs">
-        <button className={tab==='raspored'?'on':''} onClick={()=>switchTab('raspored')}><span className="i">◷</span><span>Raspored</span></button>
+        <button className={tab==='raspored'?'on':''} onClick={()=>switchTab('raspored')}><span className="i">◷</span><span>{salon.kind === 'catalog' ? 'Porudžbine' : 'Raspored'}</span></button>
         <button className={tab==='klijenti'?'on':''} onClick={()=>switchTab('klijenti')}><span className="i">☺</span><span>Klijenti</span></button>
         <button className={tab==='profil'?'on':''} onClick={()=>switchTab('profil')}><span className="i">⚙</span><span>Podešavanja</span></button>
       </div>
