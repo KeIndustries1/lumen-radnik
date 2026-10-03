@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { haptic } from '../lib/haptic'
 import Bouquet from './Bouquet'
-import { din, defaultShop } from './engine'
+import { din, defaultShop, onList, nm, productPrice, byId } from './engine'
 
 const STATUS = ['awaiting_payment', 'confirmed', 'in_progress', 'ready', 'done']
 const LABEL = { awaiting_payment: 'Čeka uplatu', confirmed: 'Potvrđeno', in_progress: 'U izradi', ready: 'Spremno', done: 'Isporučeno', cancelled: 'Otkazano' }
@@ -52,6 +52,10 @@ const CSS = `
 .ob-sheet{max-height:90vh;max-height:90dvh;overflow-y:auto}
 .ob-flex{display:flex;align-items:center;gap:8px}
 .ob-sheet .btn,.ob-tabs button.on,.ob-day.sel .ob-num{color:var(--on-rouge,#fff)}
+.ob-prod{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.ob-prod .ob-thumb{width:72px;height:72px}
+.ob-pbtn{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:9px;background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--rouge);font-weight:600;font-size:13px;border:0;cursor:pointer;position:relative;overflow:hidden}
+.ob-pbtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 `
 
 function Detail({ shop, o, onClose, onChange }) {
@@ -118,8 +122,79 @@ function Detail({ shop, o, onClose, onChange }) {
   )
 }
 
+// Slika iz telefona → JPEG najviše 1000px
+function shrink(file, max = 1000) {
+  return new Promise((res, rej) => {
+    const img = new Image()
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height))
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k)
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+      c.toBlob(b => (b ? res(b) : rej(new Error('Slika nije pročitana.'))), 'image/jpeg', 0.86)
+      URL.revokeObjectURL(img.src)
+    }
+    img.onerror = () => rej(new Error('Slika nije pročitana.'))
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+// Katalog: vlasnik stavlja svoje slike proizvoda (bez slike kupci vide crtež)
+function Products({ salon, shop, setShop }) {
+  const [busy, setBusy] = useState(null)
+  const [err, setErr] = useState('')
+  async function save(p, url) {
+    const { error } = await supabase.rpc('set_product_photo', { p_salon: salon.id, p_product: p.id, p_url: url })
+    if (error) throw error
+    setShop(sh => ({ ...sh, products: sh.products.map(x => (x.id === p.id ? { ...x, photo: url, photoBy: url ? 'workin' : null } : x)) }))
+  }
+  async function pick(p, file) {
+    if (!file) return
+    setBusy(p.id); setErr('')
+    try {
+      const blob = await shrink(file)
+      const path = `shop/${salon.id}/${p.id}-${Date.now()}.jpg`
+      const { error } = await supabase.storage.from('order-photos').upload(path, blob, { contentType: 'image/jpeg' })
+      if (error) throw error
+      await save(p, supabase.storage.from('order-photos').getPublicUrl(path).data.publicUrl)
+      haptic('success')
+    } catch (e) { haptic('warning'); setErr(e.message || String(e)) }
+    setBusy(null)
+  }
+  async function reset(p) {
+    setBusy(p.id); setErr('')
+    try { await save(p, null); haptic('success') } catch (e) { haptic('warning'); setErr(e.message || String(e)) }
+    setBusy(null)
+  }
+  const prods = onList(shop.products)
+  return (
+    <div>
+      <p className="tiny" style={{ marginTop: 0 }}>Stavi svoje slike buketa. Bez slike kupci vide crtež.</p>
+      {err && <p className="tiny" style={{ color: '#F28B8B' }}>{err}</p>}
+      {prods.map(p => {
+        const kc = byId(shop.groups, p.group)?.type === 'keychain'
+        return (
+          <div key={p.id} className="ob-prod">
+            <span className="ob-thumb">{p.photo ? <img src={p.photo} alt="" /> : <Bouquet shop={shop} design={p.design} size={72} keychain={kc} />}</span>
+            <span className="grow">
+              <span className="name">{nm(p, 'sr')}</span>
+              <span className="tiny" style={{ display: 'block' }}>{din(productPrice(shop, p, p.design))}</span>
+              <span className="ob-flex" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+                <label className="ob-pbtn">{busy === p.id ? 'Čuvam…' : p.photo ? 'Promeni sliku' : 'Dodaj sliku'}
+                  <input type="file" accept="image/*" disabled={!!busy} onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; pick(p, f) }} />
+                </label>
+                {p.photo && <button className="ob-pbtn" disabled={!!busy} onClick={() => reset(p)}>Vrati crtež</button>}
+              </span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function OrdersBoard({ salon }) {
-  const shop = salon.shop || defaultShop()
+  const [shop, setShop] = useState(() => salon.shop || defaultShop())
+  useEffect(() => { if (salon.shop) setShop(salon.shop) }, [salon.shop])
   const [rows, setRows] = useState(null)
   const [date, setDate] = useState(todayISO)
   const [mode, setMode] = useState('day')
@@ -173,13 +248,15 @@ export default function OrdersBoard({ salon }) {
     <div>
       <style>{CSS}</style>
       <div className="ob-head">
-        <b className="ob-month">{mode === 'day' ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}` : 'Porudžbine'}</b>
+        <b className="ob-month">{mode === 'day' ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}` : mode === 'prod' ? 'Katalog' : 'Porudžbine'}</b>
         <span className="tiny">{active.length} aktivne</span>
       </div>
       <div className="ob-tabs">
         <button className={mode === 'day' ? 'on' : ''} onClick={() => { haptic('tap'); setMode('day') }}>Po danu</button>
         <button className={mode === 'all' ? 'on' : ''} onClick={() => { haptic('tap'); setMode('all') }}>Sve aktivne</button>
+        <button className={mode === 'prod' ? 'on' : ''} onClick={() => { haptic('tap'); setMode('prod') }}>Slike</button>
       </div>
+      {mode === 'prod' && <Products salon={salon} shop={shop} setShop={setShop} />}
 
       {mode === 'day' && (
         <div className="ob-week" onTouchStart={e => { touch.current = e.touches[0].clientX }}
@@ -197,7 +274,7 @@ export default function OrdersBoard({ salon }) {
       )}
 
       {mode === 'day' && <div className="eyebrow" style={{ marginTop: 0 }}>{fmt(date)}</div>}
-      {rows === null ? <p className="tiny">Učitavam…</p> : list.length ? list.map(card) : (
+      {mode === 'prod' ? null : rows === null ? <p className="tiny">Učitavam…</p> : list.length ? list.map(card) : (
         <div className="card"><p className="tiny" style={{ margin: 0 }}>{mode === 'day' ? 'Nema porudžbina za ovaj dan.' : 'Nema aktivnih porudžbina.'}</p></div>
       )}
 
