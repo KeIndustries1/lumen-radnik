@@ -98,7 +98,7 @@ export default function App() {
           <Clients salon={salon} />
         </div>
         <div style={{ display: tab === 'profil' ? 'block' : 'none' }}>
-          <Settings worker={worker} salon={salon} onWorkerChange={reloadWorker} />
+          <Settings worker={worker} salon={salon} onWorkerChange={reloadWorker} onSalonChange={patch => setSalon(s => ({ ...s, ...patch }))} />
         </div>
       </main>
 
