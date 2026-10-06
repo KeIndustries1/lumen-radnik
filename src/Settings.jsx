@@ -7,16 +7,17 @@ import { supabase } from './lib/supabase'
 import { catFor, initials } from './images'
 import { haptic } from './lib/haptic'
 import { SkeletonRows } from './Skeleton'
+import HeroEdit from './shop/HeroEdit'
 
 const DOW_ORDER = [1, 2, 3, 4, 5, 6, 0]   // pon..ned (SQL dow: 0=ned...6=sub)
 const DOW_LABEL = { 0: 'Nedelja', 1: 'Ponedeljak', 2: 'Utorak', 3: 'Sreda', 4: 'Četvrtak', 5: 'Petak', 6: 'Subota' }
 const fmtHM = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0')
 const TIME_OPTIONS = Array.from({ length: (23-6)*2 + 1 }, (_, i) => 6*60 + i*30)   // 06:00–23:00 na 30min
 
-export default function Settings({ worker, salon, onWorkerChange }) {
+export default function Settings({ worker, salon, onWorkerChange, onSalonChange }) {
   const [modal, setModal] = useState(null)   // 'profile' | 'hours' | 'photo' | 'timeoff' | 'services' | 'vip' | 'notify' | 'remind' | null
 
-  const titles = { profile: 'Moj profil', hours: 'Radno vreme', photo: 'Slika profila', timeoff: 'Odmor', services: 'Cene i usluge', vip: 'VIP termini', notify: 'Obaveštenje', remind: 'Podsetnici klijentima' }
+  const titles = { profile: 'Moj profil', hours: 'Radno vreme', photo: 'Slika profila', timeoff: 'Odmor', services: 'Cene i usluge', vip: 'VIP termini', notify: 'Obaveštenje', remind: 'Podsetnici klijentima', hero: 'Početna slika' }
 
   function open(key) { haptic('tap'); setModal(key) }
   function close() { setModal(null) }
@@ -26,6 +27,7 @@ export default function Settings({ worker, salon, onWorkerChange }) {
       <div className="pagehead"><h2>Podešavanja</h2></div>
       <div className="settings-list">
         <button className="settings-row" onClick={() => open('profile')}><span className="s-ic"><User size={13} strokeWidth={1.75} /></span>Moj profil<span className="chev">›</span></button>
+        {salon?.kind === 'catalog' && <button className="settings-row" onClick={() => open('hero')}><span className="s-ic"><ImageIcon size={13} strokeWidth={1.75} /></span>Početna slika<span className="chev">›</span></button>}
         <button className="settings-row" onClick={() => open('photo')}><span className="s-ic"><ImageIcon size={13} strokeWidth={1.75} /></span>Slika profila<span className="chev">›</span></button>
         <button className="settings-row" onClick={() => open('services')}><span className="s-ic"><Banknote size={13} strokeWidth={1.75} /></span>Cene i usluge<span className="chev">›</span></button>
         <button className="settings-row" onClick={() => open('vip')}><span className="s-ic"><Crown size={13} strokeWidth={1.75} /></span>VIP termini<span className="chev">›</span></button>
@@ -50,6 +52,7 @@ export default function Settings({ worker, salon, onWorkerChange }) {
             </div>
             <div className="sheet-body">
               {modal === 'profile' && <ProfileSection worker={worker} salon={salon} />}
+              {modal === 'hero' && <HeroEdit salon={salon} onSalonChange={onSalonChange} />}
               {modal === 'photo' && <PhotoSection worker={worker} onWorkerChange={onWorkerChange} />}
               {modal === 'hours' && <HoursSection worker={worker} salon={salon} />}
               {modal === 'timeoff' && <TimeOffSection worker={worker} />}
